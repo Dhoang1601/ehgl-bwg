@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GiaoLy App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style type="text/tailwindcss">
+      @layer utilities {
+        .shadow-top-md {
+          box-shadow: 0 -4px 6px -1px rgb(0 0 0 / 0.1), 0 -2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+      }
+      /* Animations */
+      @layer utilities {
+        /* DialogOverlay Animations */
+        @keyframes fadeInOverlay { 
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes fadeOutOverlay {
+          from { opacity: 1; }
+          to { opacity: 0; }
+        }
+        .animate-fadeInOverlay { animation: fadeInOverlay 150ms cubic-bezier(0.16, 1, 0.3, 1); }
+        .animate-fadeOutOverlay { animation: fadeOutOverlay 150ms cubic-bezier(0.16, 1, 0.3, 1) forwards; } /* Added forwards */
+
+        /* DialogContent Centered Modal Animations */
+        @keyframes dialogContentShowAnimation {
+          from { opacity: 0; transform: translate(-50%, -50%) scale(0.96); }
+          to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+        @keyframes dialogContentHideAnimation {
+          from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+          to { opacity: 0; transform: translate(-50%, -50%) scale(0.96); }
+        }
+        /* Rule for DialogContent's specific class combination for centered modal */
+        [data-state='open'].dialog-content-centered-modal.animate-in {
+          animation-name: dialogContentShowAnimation;
+          animation-duration: 200ms; 
+          animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        [data-state='closed'].dialog-content-centered-modal.animate-out {
+          animation-name: dialogContentHideAnimation;
+          animation-duration: 150ms;
+          animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+          animation-fill-mode: forwards; /* Added forwards */
+        }
+
+        /* Bottom Sheet (ResultPopup) Animations */
+        @keyframes slideUpFromBottom {
+          from { transform: translateY(100%); opacity: 0.9; }
+          to { transform: translateY(0%); opacity: 1; }
+        }
+        @keyframes slideDownToBottom {
+          from { transform: translateY(0%); opacity: 1; }
+          to { transform: translateY(100%); opacity: 0.9; }
+        }
+        /* Classes for Bottom Sheet - to be applied directly on the sheet element */
+        .animate-slide-up {
+          animation: slideUpFromBottom 300ms cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+        .animate-slide-down {
+          animation: slideDownToBottom 300ms cubic-bezier(0.25, 0.1, 0.25, 1) forwards; /* Added forwards for consistency */
+        }
+
+        /* Generic Fade Animations (if needed elsewhere) */
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes fadeOut {
+          from { opacity: 1; }
+          to { opacity: 0; }
+        }
+        .animate-in.fade-in-0 { 
+          animation-name: fadeIn;
+          animation-duration: 150ms; 
+          animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); 
+        }
+        .animate-out.fade-out-0 { 
+          animation-name: fadeOut;
+          animation-duration: 150ms;
+          animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+          animation-fill-mode: forwards; /* Added forwards for consistency */
+        }
+      }
+    </style>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>😇</text></svg>">
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.1.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
+    "react/": "https://esm.sh/react@^19.1.0/",
+    "../../src/utils/audioUtils": "./src/utils/audioUtils.ts"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-white">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
