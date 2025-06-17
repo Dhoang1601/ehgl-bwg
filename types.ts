@@ -111,4 +111,14 @@ export const CATEGORY_STYLES: Record<string, CategoryDetails> = {
   },
 };
 
-export type Page = 'welcome' | 'selectCategory' | 'selectClass' | 'learning' | 'profile' | 'lessonDetail';
+export type Page = 'welcome' | 'setUsername' | 'selectCategory' | 'selectClass' | 'learning' | 'profile' | 'lessonDetail' | 'prayers' | 'review';
+
+// Prayer related types
+export type PrayerCategoryKey = 'xungtoi' | 'themsuc' | 'songdao';
+
+export interface Prayer {
+  id: string;
+  categoryKey: PrayerCategoryKey;
+  title: string;
+  content: string[]; // Array of paragraphs
+}

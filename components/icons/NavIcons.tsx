@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface IconProps {
@@ -18,15 +17,13 @@ export const ShieldIcon: React.FC<IconProps> = ({ className }) => (
   </svg>
 );
 
-// Using a simple owl for Mascot
-export const MascotIcon: React.FC<IconProps> = ({ className }) => (
- <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
-  <path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"/>
-  <path d="M12 17.5c2.481 0 4.5-2.019 4.5-4.5S14.481 8.5 12 8.5s-4.5 2.019-4.5 4.5 2.019 4.5 4.5 4.5zm0-7c1.378 0 2.5 1.122 2.5 2.5s-1.122 2.5-2.5 2.5-2.5-1.122-2.5-2.5 1.122-2.5 2.5-2.5z"/>
-  <circle cx="9" cy="10.5" r="1"/>
-  <circle cx="15" cy="10.5" r="1"/>
-  <path d="M12 5c-1.785 0-3.384.621-4.634 1.647L6.293 5.574A.999.999 0 104.88 6.987l1.107.983C5.39 9.176 5 10.534 5 12h14c0-1.466-.39-2.824-.987-4.013l1.107-.983a.999.999 0 10-1.414-1.414L16.634 6.647C15.384 5.621 13.785 5 12 5z"/>
-</svg>
+// Icon for Review Tab
+export const ClipboardListIcon: React.FC<IconProps> = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path fillRule="evenodd" d="M10.5 3.75a2.25 2.25 0 00-2.25 2.25v10.5a2.25 2.25 0 002.25 2.25h3a2.25 2.25 0 002.25-2.25V6a2.25 2.25 0 00-2.25-2.25h-3zM10.5 6H13.5V16.5H10.5V6z" clipRule="evenodd" />
+    <path d="M9 3.75A3.75 3.75 0 005.25 7.5v6.75A3.75 3.75 0 009 18h6a3.75 3.75 0 003.75-3.75V7.5A3.75 3.75 0 0015 3.75H9zM5.25 16.09V7.5c0-1.15.692-2.163 1.701-2.535A3.71 3.71 0 016.25 4.5h.003c.094.004.19.007.284.007C6.64 4.514 7 4.62 7 4.75c0 .09-.03.17-.08.24a.75.75 0 01-.604.26A2.25 2.25 0 006 7.5v10.5c0 .966.784 1.75 1.75 1.75h8.5a2.25 2.25 0 002.25-2.25v-2.536A3.71 3.71 0 0117.75 19.5h-.003a3.75 3.75 0 01-3.75-3.75H9A3.75 3.75 0 015.25 12v4.09z" />
+    <path d="M8.25 7.5h7.5V9h-7.5V7.5zm0 3h7.5v1.5h-7.5V10.5zm0 3h7.5v1.5h-7.5V13.5z" fill="#fff" />
+  </svg>
 );
 
 

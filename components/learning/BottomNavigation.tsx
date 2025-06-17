@@ -1,14 +1,13 @@
-
 import React from 'react';
-import { HomeIcon, ShieldIcon, MascotIcon, BookmarkIcon, UserIcon } from '../icons/NavIcons';
+import { HomeIcon, ShieldIcon, ClipboardListIcon, BookmarkIcon, UserIcon } from '../icons/NavIcons'; // Added ClipboardListIcon, removed MascotIcon
 import { Page } from '../../types'; // Import Page type
 
 interface BottomNavigationProps {
-  activeTab: 'home' | 'shield' | 'mascot' | 'bookmark' | 'user';
+  activeTab: 'home' | 'shield' | 'review' | 'bookmark' | 'user'; // Added 'review'
   onNavigate: (page: Page) => void;
 }
 
-type NavItemName = 'home' | 'shield' | 'mascot' | 'bookmark' | 'user';
+type NavItemName = 'home' | 'shield' | 'review' | 'bookmark' | 'user'; // Added 'review'
 
 interface NavItem {
   name: NavItemName;
@@ -19,11 +18,11 @@ interface NavItem {
 
 const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onNavigate }) => {
   const navItems: NavItem[] = [
-    { name: 'mascot', Icon: MascotIcon, label: 'Ô khóa', page: null }, // Placeholder
-    { name: 'shield', Icon: ShieldIcon, label: 'Kinh', page: null }, // Placeholder
+    { name: 'review', Icon: ClipboardListIcon, label: 'Ôn tập', page: 'review' }, // Updated: Review tab
+    { name: 'shield', Icon: ShieldIcon, label: 'Kinh', page: 'prayers' },
     { name: 'home', Icon: HomeIcon, label: 'Trang chủ', page: 'learning' },
     { name: 'user', Icon: UserIcon, label: 'Cá nhân', page: 'profile' },
-    { name: 'bookmark', Icon: BookmarkIcon, label: 'Ô khóa', page: null }, // Placeholder
+    { name: 'bookmark', Icon: BookmarkIcon, label: 'Ô khóa', page: null }, // Kept second placeholder
   ];
 
   return (
@@ -41,7 +40,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onNaviga
                           ${isActive ? 'text-orange-500' : 'text-gray-500 hover:text-orange-400'}
                           ${!item.page ? 'cursor-not-allowed opacity-50' : ''}`}
             >
-              <item.Icon className={`w-6 h-6 sm:w-7 sm:h-7 mb-0.5 ${isActive ? 'fill-current' : ''}`} />
+              <item.Icon className={`w-6 h-6 sm:w-7 sm:h-7 mb-0.5 ${isActive && (item.name !== 'home' && item.name !== 'review') ? 'fill-current' : (isActive && (item.name === 'home' || item.name === 'review') ? 'fill-current' : '')}`} />
               <span className={`text-[10px] sm:text-xs font-medium ${isActive ? 'text-orange-500' : 'text-gray-600'}`}>
                 {item.label}
               </span>

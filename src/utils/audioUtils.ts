@@ -24,13 +24,13 @@ export const loadSound = async (url: string): Promise<AudioBuffer | null> => {
 
     const response = await fetch(url);
     if (!response.ok) {
-      throw new Error(`Failed to fetch sound: ${response.statusText}`);
+      throw new Error(`Failed to fetch sound: ${response.statusText} (URL: ${url})`);
     }
     const arrayBuffer = await response.arrayBuffer();
     const audioBuffer = await context.decodeAudioData(arrayBuffer);
     return audioBuffer;
   } catch (error) {
-    console.error(`Error loading sound from ${url}:`, error);
+    console.warn(`Warning: Could not load sound from ${url}. The sound effect will not play.`, error);
     return null;
   }
 };
@@ -45,6 +45,6 @@ export const playSound = (buffer: AudioBuffer | null) => {
     source.connect(context.destination);
     source.start(0);
   } catch (error) {
-    console.error("Error playing sound:", error);
+    console.warn("Error playing sound:", error);
   }
 };

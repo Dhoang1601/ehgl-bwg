@@ -1,36 +1,47 @@
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { CategoryDetails, Page } from '../../types'; 
-import Header from './Header';
+// Header and BottomNavigation are now rendered in App.tsx
 import ChapterBanner from './ChapterBanner';
 import LearningPathContent, { LessonRefMap } from './LearningPathContent';
-import BottomNavigation from './BottomNavigation';
 import LessonPopup from './LessonPopup';
 import LessonSelectionList from './LessonSelectionList'; 
-import LessonInfoPanel from './LessonInfoPanel'; // Import new component
-// Import the static data structure and relevant interfaces
+import LessonInfoPanel from './LessonInfoPanel'; 
 import { APP_LEARNING_PATH_DATA, LearningPathData as StaticLearningPathData, Unit, Lesson } from '../../src/data/appStructureData';
-// Import lesson info types and data
 import { LessonInfoData } from '../../src/data/info/lessonInfoTypes';
-import xungtoi_unit1_info from '../../src/data/info/xung-toi/xungtoi_unit1_info.ts';
-import xungtoi_unit2_info from '../../src/data/info/xung-toi/xungtoi_unit2_info.ts';
-import xungtoi_unit3_info from '../../src/data/info/xung-toi/xungtoi_unit3_info.ts';
-// Add other static imports for lesson info data here as needed
-// e.g., import themsuc_unit1_info from '../../src/data/info/them-suc/themsuc_unit1_info.ts';
 
-// Helper to convert unit ID to info module key
-// e.g., "xungtoi-unit1" -> "xungtoi_unit1_info"
+import { xungToiLop1UnitInfoData } from '../../src/data/info/xung-toi/xung_toi_lop_1_info';
+import { xungToiLop2UnitInfoData } from '../../src/data/info/xung-toi/xung_toi_lop_2_info'; 
+import { xungToiLop3UnitInfoData } from '../../src/data/info/xung-toi/xung_toi_lop_3_info'; 
+import { themSucLop1UnitInfoData } from '../../src/data/info/them-suc/them_suc_lop_1_info';
+import { themSucLop2UnitInfoData } from '../../src/data/info/them-suc/them_suc_lop_2_info';
+import { themSucLop3UnitInfoData } from '../../src/data/info/them-suc/them_suc_lop_3_info';
+import { songDaoLop1UnitInfoData } from '../../src/data/info/song-dao/song_dao_lop_1_info';
+import { songDaoLop2UnitInfoData } from '../../src/data/info/song-dao/song_dao_lop_2_info';
+import { songDaoLop3UnitInfoData } from '../../src/data/info/song-dao/song_dao_lop_3_info';
+
+
 const unitIdToInfoKey = (unitId: string): string => {
   return unitId.replace(/-/g, '_') + '_info';
 };
 
-// Map of statically imported lesson info modules
-const lessonInfoModules: Record<string, LessonInfoData> = {
-  'xungtoi_unit1_info': xungtoi_unit1_info,
-  'xungtoi_unit2_info': xungtoi_unit2_info,
-  'xungtoi_unit3_info': xungtoi_unit3_info,
-  // Add other imported info modules here
-  // 'themsuc_unit1_info': themsuc_unit1_info,
+const ALL_CLASS_UNIT_INFO_DATA: Record<string, Record<string, Record<string, LessonInfoData>>> = {
+  "xungtoi": {
+    "Xưng Tội 1": xungToiLop1UnitInfoData,
+    "Xưng Tội 2": xungToiLop2UnitInfoData, 
+    "Xưng Tội 3": xungToiLop3UnitInfoData, 
+  },
+  "themsuc": {
+    "Thêm Sức 1": themSucLop1UnitInfoData, 
+    "Thêm Sức 2": themSucLop2UnitInfoData,
+    "Thêm Sức 3": themSucLop3UnitInfoData,
+  },
+  "songdao": {
+    "Sống Đạo 1": songDaoLop1UnitInfoData, 
+    "Sống Đạo 2": songDaoLop2UnitInfoData,
+    "Sống Đạo 3": songDaoLop3UnitInfoData,
+  }
 };
 
 
@@ -45,14 +56,18 @@ interface LearningPathPageProps {
   selectedCategory: string; 
   selectedClass: string;    
   categoryDetails: CategoryDetails;
-  userXP: number;
-  userLevel: number;
+  userXP: number; // Still needed for logic, though Header is external
+  userLevel: number; // Still needed for logic
   lessonsStatus: Record<string, 'unlocked' | 'completed'>;
   updateUserProgress: (xpGained: number, completedLessonId?: string, nextLessonId?: string) => void;
   onResetProgress: () => void;
   onNavigate: (page: Page) => void;
   onStartLesson: (lessonId: string, lessonTitle: string) => void; 
-  isExiting?: boolean; 
+  targetLessonIdForScroll: string | null; 
+  onScrollTargetProcessed: () => void; 
+  userStreak: number; 
+  lastStreakUpdate: string | null;
+  // isExiting prop removed
 }
 
 const deepCopy = <T extends unknown>(obj: T): T => {
@@ -84,10 +99,14 @@ const findActualInitialActiveUnitIndex = (processedUnitsList: Unit[]): number =>
             return i;
         }
     }
-    return 0;
+    if (processedUnitsList.every(unit => unit.lessons.every(lesson => lesson.status === 'completed'))) {
+      return 0;
+    }
+    return 0; 
 };
 
-const HEADER_HEIGHT = 52; 
+// Constants for internal layout calculations, assuming main header height is 52px
+const MAIN_HEADER_HEIGHT = 52; // This is now external to this component
 const CHAPTER_BANNER_FULL_HEIGHT = 40; 
 const CHAPTER_BANNER_SHRUNK_HEIGHT = 31; 
 
@@ -103,7 +122,10 @@ const LearningPathPage: React.FC<LearningPathPageProps> = ({
   onResetProgress,
   onNavigate,
   onStartLesson,
-  isExiting = false,
+  targetLessonIdForScroll,
+  onScrollTargetProcessed,
+  userStreak, 
+  lastStreakUpdate, 
 }) => {
   const [learningData, setLearningData] = useState<ProcessedLearningPathData | null>(null);
   const [lessonForPopup, setLessonForPopup] = useState<Lesson | null>(null);
@@ -111,7 +133,6 @@ const LearningPathPage: React.FC<LearningPathPageProps> = ({
   
   const [isLessonPopupMounted, setIsLessonPopupMounted] = useState(false);
   const [isLessonPopupVisible, setIsLessonPopupVisible] = useState(false);
-  const [pageVisible, setPageVisible] = useState(false);
   const [errorLoadingPath, setErrorLoadingPath] = useState<string | null>(null);
 
   const mainScrollRef = useRef<HTMLDivElement>(null);
@@ -125,13 +146,20 @@ const LearningPathPage: React.FC<LearningPathPageProps> = ({
   const [dynamicBannerLessonTitle, setDynamicBannerLessonTitle] = useState(''); 
 
   const [isLessonSelectionModeActive, setIsLessonSelectionModeActive] = useState(false);
-  const [isLessonInfoModeActive, setIsLessonInfoModeActive] = useState(false); // New state for lesson info
-  const [currentUnitInfoData, setCurrentUnitInfoData] = useState<LessonInfoData | null>(null); // New state for info data
+  const [isLessonInfoModeActive, setIsLessonInfoModeActive] = useState(false); 
+  const [currentUnitInfoData, setCurrentUnitInfoData] = useState<LessonInfoData | null>(null); 
+  
+  const [currentClassInfoModules, setCurrentClassInfoModules] = useState<Record<string, LessonInfoData>>({});
+  const [expandedUnits, setExpandedUnits] = useState<Record<string, boolean>>({});
+  const [initialScrollPerformed, setInitialScrollPerformed] = useState(false);
+  const [scrollToUnitContainingLessonId, setScrollToUnitContainingLessonId] = useState<string | null>(null);
 
-
+  // Effective top offset for ChapterBanner (it's fixed relative to viewport, below main header)
+  const chapterBannerTopOffset = MAIN_HEADER_HEIGHT;
   const bannerCurrentHeight = isLessonSelectionModeActive || isLessonInfoModeActive ? CHAPTER_BANNER_SHRUNK_HEIGHT : CHAPTER_BANNER_FULL_HEIGHT;
-  const currentStickyHeaderHeight = HEADER_HEIGHT + bannerCurrentHeight;
-  const fullStickyHeaderAndBannerHeight = HEADER_HEIGHT + CHAPTER_BANNER_FULL_HEIGHT;
+  // Sticky header height *within this component's scrollable area* is just the ChapterBanner
+  const currentStickyHeaderHeight = bannerCurrentHeight; 
+  const fullStickyHeaderAndBannerHeight = CHAPTER_BANNER_FULL_HEIGHT;
 
 
   useEffect(() => {
@@ -139,16 +167,24 @@ const LearningPathPage: React.FC<LearningPathPageProps> = ({
   }, [activeUnitIndex]);
 
   useEffect(() => {
-    if (!isExiting) {
-      const timer = requestAnimationFrame(() => setPageVisible(true));
-      return () => cancelAnimationFrame(timer);
+    // Page visibility is now handled by Framer Motion in App.tsx
+    // This effect might be simplified or removed if pageVisible state is no longer needed
+    if (isLessonSelectionModeActive || isLessonInfoModeActive) {
+      // Actions when panels are active
     } else {
-      setPageVisible(false); 
-      setIsLessonSelectionModeActive(false); 
-      setIsLessonInfoModeActive(false); // Close info panel on page exit
-      setCurrentUnitInfoData(null);
+      // Actions when panels are inactive
     }
-  }, [isExiting]);
+  }, [isLessonSelectionModeActive, isLessonInfoModeActive]);
+
+  useEffect(() => {
+    const classInfoData = ALL_CLASS_UNIT_INFO_DATA[selectedCategory]?.[selectedClass];
+    if (classInfoData) {
+      setCurrentClassInfoModules(classInfoData);
+    } else {
+      setCurrentClassInfoModules({});
+      console.warn(`Unit info data for ${selectedCategory} - ${selectedClass} not found or not yet combined.`);
+    }
+  }, [selectedCategory, selectedClass]);
 
   useEffect(() => {
     setErrorLoadingPath(null);
@@ -167,28 +203,35 @@ const LearningPathPage: React.FC<LearningPathPageProps> = ({
     }
 
     const processedUnits = deepCopy(staticClassData.units);
+    const initialExpandedState: Record<string, boolean> = {};
     processedUnits.forEach((unit) => {
       let previousLessonInUnitWasCompleted = false; 
+      let allLessonsInUnitCompleted = true;
       unit.lessons.forEach((lesson, lessonIndex) => {
         const storedStatus = lessonsStatus[lesson.id];
         if (storedStatus === 'completed') {
           lesson.status = 'completed';
           previousLessonInUnitWasCompleted = true; 
-        } else if (lessonIndex === 0) { 
-          lesson.status = 'unlocked';
-          previousLessonInUnitWasCompleted = false; 
-        } else if (previousLessonInUnitWasCompleted) { 
-          lesson.status = 'unlocked';
-          previousLessonInUnitWasCompleted = false; 
         } else {
-          lesson.status = 'locked';
-          previousLessonInUnitWasCompleted = false;
+          allLessonsInUnitCompleted = false;
+          if (lessonIndex === 0) { 
+            lesson.status = 'unlocked';
+            previousLessonInUnitWasCompleted = false; 
+          } else if (previousLessonInUnitWasCompleted) { 
+            lesson.status = 'unlocked';
+            previousLessonInUnitWasCompleted = false; 
+          } else {
+            lesson.status = 'locked';
+            previousLessonInUnitWasCompleted = false;
+          }
         }
         if (!lessonRefs.current[lesson.id]) {
           lessonRefs.current[lesson.id] = React.createRef<HTMLButtonElement>();
         }
       });
+      initialExpandedState[unit.id] = !allLessonsInUnitCompleted; 
     });
+    setExpandedUnits(initialExpandedState);
     
     const dataToSet: ProcessedLearningPathData = {
       categoryName: staticClassData.categoryName,
@@ -213,13 +256,99 @@ const LearningPathPage: React.FC<LearningPathPageProps> = ({
     } else {
         setDynamicBannerLessonTitle("Tổng quan lớp học");
     }
-
+    setInitialScrollPerformed(false); 
   }, [selectedCategory, selectedClass, lessonsStatus]);
+
+  useEffect(() => {
+    if (targetLessonIdForScroll) {
+      setScrollToUnitContainingLessonId(targetLessonIdForScroll);
+      setInitialScrollPerformed(false); 
+    }
+  }, [targetLessonIdForScroll]);
+
+
+  useEffect(() => {
+    if (!learningData || !mainScrollRef.current || unitSectionRefs.current.length === 0) {
+      return;
+    }
+  
+    let targetUnitIndex = -1;
+    let targetUnitIdForExpansion: string | null = null;
+    let scrollBehavior: ScrollBehavior = 'auto';
+  
+    if (scrollToUnitContainingLessonId) {
+      learningData.units.forEach((unit, index) => {
+        if (unit.lessons.some(lesson => lesson.id === scrollToUnitContainingLessonId)) {
+          targetUnitIndex = index;
+          targetUnitIdForExpansion = unit.id;
+        }
+      });
+  
+      if (targetUnitIndex !== -1 && targetUnitIdForExpansion) {
+        scrollBehavior = 'smooth'; 
+        const currentUnitId = targetUnitIdForExpansion;
+        if (expandedUnits[currentUnitId] === false) {
+          setExpandedUnits(prev => ({ ...prev, [currentUnitId]: true }));
+           setTimeout(() => performScroll(targetUnitIndex, scrollBehavior, true), 350); 
+        } else {
+          performScroll(targetUnitIndex, scrollBehavior, true);
+        }
+      } else {
+        onScrollTargetProcessed(); 
+        setScrollToUnitContainingLessonId(null);
+        if (!initialScrollPerformed) {
+          const initialActiveIdx = findActualInitialActiveUnitIndex(learningData.units);
+          performScroll(initialActiveIdx, 'auto', false);
+          setActiveUnitIndex(initialActiveIdx);
+        }
+      }
+    } else if (!initialScrollPerformed) {
+      const initialActiveIdx = findActualInitialActiveUnitIndex(learningData.units);
+      performScroll(initialActiveIdx, 'auto', false);
+      setActiveUnitIndex(initialActiveIdx);
+    }
+  
+    function performScroll(unitIdx: number, behavior: ScrollBehavior, isTargetedScroll: boolean) {
+      const targetUnitRef = unitSectionRefs.current[unitIdx];
+      if (targetUnitRef?.current && mainScrollRef.current) {
+        const scrollContainer = mainScrollRef.current;
+        const unitElement = targetUnitRef.current;
+        if (unitElement.offsetParent !== null) { 
+          requestAnimationFrame(() => {
+            const unitTopRelativeToContainer = unitElement.offsetTop - scrollContainer.offsetTop;
+            // Scroll margin is now just for ChapterBanner as main Header is external
+            scrollContainer.scrollTo({
+              top: unitTopRelativeToContainer - CHAPTER_BANNER_FULL_HEIGHT, 
+              behavior: behavior
+            });
+            if (isTargetedScroll) {
+              onScrollTargetProcessed();
+              setScrollToUnitContainingLessonId(null);
+            }
+            setInitialScrollPerformed(true);
+          });
+        } else if (isTargetedScroll) { 
+            onScrollTargetProcessed();
+            setScrollToUnitContainingLessonId(null);
+        }
+      } else if (isTargetedScroll) { 
+          onScrollTargetProcessed();
+          setScrollToUnitContainingLessonId(null);
+      }
+    }
+  }, [
+    learningData, 
+    scrollToUnitContainingLessonId, 
+    initialScrollPerformed, 
+    onScrollTargetProcessed, 
+    expandedUnits, 
+    setExpandedUnits, 
+    setActiveUnitIndex 
+  ]);
 
 
   useEffect(() => {
     if (!mainScrollRef.current || !learningData || unitSectionRefs.current.length === 0 || mainScrollRef.current.clientHeight <= 0) {
-        // Wait for mainScrollRef to be available and have dimensions
         return;
     }
 
@@ -248,6 +377,7 @@ const LearningPathPage: React.FC<LearningPathPageProps> = ({
     
     const observerOptions = {
         root: mainScrollRef.current,
+        // currentStickyHeaderHeight is now just the ChapterBanner's height
         rootMargin: `-${currentStickyHeaderHeight -1}px 0px -${mainScrollRef.current.clientHeight - currentStickyHeaderHeight - 50}px 0px`, 
         threshold: 0.01, 
     };
@@ -260,9 +390,7 @@ const LearningPathPage: React.FC<LearningPathPageProps> = ({
       });
     } catch (e) {
       console.error("Failed to create IntersectionObserver:", e);
-      // Handle error, perhaps by not observing, or logging
     }
-
 
     return () => {
         unitSectionRefs.current.forEach(ref => {
@@ -272,27 +400,25 @@ const LearningPathPage: React.FC<LearningPathPageProps> = ({
           observer.disconnect();
         }
     };
-  }, [learningData, currentStickyHeaderHeight]); // Rerun if learningData or sticky height changes
+  }, [learningData, currentStickyHeaderHeight]); 
 
   useEffect(() => {
     if (learningData && learningData.units[activeUnitIndex]) {
         setDynamicBannerLessonTitle(learningData.units[activeUnitIndex].title);
-         // If lesson info mode is active, update its content if the active unit changes
         if (isLessonInfoModeActive) {
             const unitId = learningData.units[activeUnitIndex].id;
             const infoKey = unitIdToInfoKey(unitId);
-            const infoData = lessonInfoModules[infoKey];
+            const infoData = currentClassInfoModules[infoKey]; 
             setCurrentUnitInfoData(infoData || null);
         }
     } else if (learningData && isLessonInfoModeActive) {
-        // activeUnitIndex might be out of bounds or units array is empty
         setCurrentUnitInfoData(null);
     }
 
     if (learningData) { 
         setDynamicBannerChapterTitle(learningData.staticChapterTitle);
     }
-  }, [activeUnitIndex, learningData, isLessonInfoModeActive]);
+  }, [activeUnitIndex, learningData, isLessonInfoModeActive, currentClassInfoModules]);
 
 
   const closeLessonPopup = useCallback(() => {
@@ -365,27 +491,27 @@ const LearningPathPage: React.FC<LearningPathPageProps> = ({
       setCurrentUnitInfoData(null);
     } else {
       setIsLessonInfoModeActive(true);
-      setIsLessonSelectionModeActive(false); // Ensure selection list is closed
+      setIsLessonSelectionModeActive(false); 
       if (learningData && learningData.units[activeUnitIndexRef.current]) {
         const unitId = learningData.units[activeUnitIndexRef.current].id;
         const infoKey = unitIdToInfoKey(unitId);
-        const infoData = lessonInfoModules[infoKey];
-        setCurrentUnitInfoData(infoData || null); // Set to null if not found to show a message
+        const infoData = currentClassInfoModules[infoKey]; 
+        setCurrentUnitInfoData(infoData || null); 
       } else {
         setCurrentUnitInfoData(null);
       }
     }
-  }, [isLessonInfoModeActive, learningData]);
+  }, [isLessonInfoModeActive, learningData, currentClassInfoModules]);
 
   const handleBannerMenuIconClick = useCallback(() => {
     if (isLessonInfoModeActive) {
-      setIsLessonInfoModeActive(false); // Close info panel
+      setIsLessonInfoModeActive(false); 
       setCurrentUnitInfoData(null);
     } else if (isLessonSelectionModeActive) {
-      setIsLessonSelectionModeActive(false); // Close selection list
+      setIsLessonSelectionModeActive(false); 
     } else {
-      setIsLessonSelectionModeActive(true); // Open selection list
-      setIsLessonInfoModeActive(false); // Ensure info panel is closed
+      setIsLessonSelectionModeActive(true); 
+      setIsLessonInfoModeActive(false); 
       setCurrentUnitInfoData(null);
     }
   }, [isLessonInfoModeActive, isLessonSelectionModeActive]);
@@ -394,13 +520,11 @@ const LearningPathPage: React.FC<LearningPathPageProps> = ({
     if (learningData && unitSectionRefs.current[unitIndex] && unitSectionRefs.current[unitIndex].current) {
         const unitElement = unitSectionRefs.current[unitIndex].current;
         if (unitElement) {
-            // Calculate the target scroll position to align the top of the unit element
-            // with the bottom of the sticky header/banner.
             const scrollContainer = mainScrollRef.current;
             if (scrollContainer) {
                 const unitTopRelativeToContainer = unitElement.offsetTop - scrollContainer.offsetTop;
                 scrollContainer.scrollTo({
-                    top: unitTopRelativeToContainer - fullStickyHeaderAndBannerHeight, // Adjusted to account for the banner
+                    top: unitTopRelativeToContainer - CHAPTER_BANNER_FULL_HEIGHT, // Adjust for ChapterBanner height only
                     behavior: 'smooth'
                 });
             }
@@ -408,11 +532,21 @@ const LearningPathPage: React.FC<LearningPathPageProps> = ({
     }
     setActiveUnitIndex(unitIndex); 
     setIsLessonSelectionModeActive(false); 
-  }, [learningData, unitSectionRefs, setActiveUnitIndex, setIsLessonSelectionModeActive, fullStickyHeaderAndBannerHeight]);
+  }, [learningData, unitSectionRefs, setActiveUnitIndex, setIsLessonSelectionModeActive]);
 
+  const toggleUnitExpansion = (unitId: string) => {
+    setExpandedUnits(prev => ({ ...prev, [unitId]: !prev[unitId] }));
+  };
+  
+  const pageMotionProps = {
+    initial: { opacity: 0 },
+    animate: { opacity: 1 },
+    exit: { opacity: 0 },
+    transition: { duration: 0.3 }
+  };
 
   if (errorLoadingPath) {
-    return <div className={`flex flex-col items-center justify-center min-h-screen transition-opacity duration-300 ease-in-out p-4 text-center ${pageVisible && !isExiting ? 'opacity-100' : 'opacity-0'}`}>
+    return <motion.div {...pageMotionProps} className="flex flex-col items-center justify-center min-h-screen p-4 text-center">
         <p className="text-red-600 font-semibold text-lg">Lỗi tải dữ liệu học tập:</p>
         <p className="text-gray-700">{errorLoadingPath}</p>
         <button 
@@ -421,32 +555,29 @@ const LearningPathPage: React.FC<LearningPathPageProps> = ({
         >
             Chọn lại Ngành/Lớp
         </button>
-    </div>;
+    </motion.div>;
   }
   
   if (!learningData) {
-    return <div className={`flex items-center justify-center min-h-screen transition-opacity duration-300 ease-in-out ${pageVisible && !isExiting ? 'opacity-100' : 'opacity-0'}`}>Đang tải dữ liệu học tập...</div>;
+    return <motion.div {...pageMotionProps} className="flex items-center justify-center min-h-screen">Đang tải dữ liệu học tập...</motion.div>;
   }
 
-  const xpToNextLevel = (userLevel + 1) * 100;
-
   return (
-    <div className={`flex flex-col h-screen transition-opacity duration-500 ease-in-out ${pageVisible && !isExiting ? 'opacity-100' : 'opacity-0'}`}>
-      <Header 
-        categoryColors={categoryDetails.colors} 
-        userLevel={userLevel}
-        userXP={userXP}
-        xpToNextLevel={xpToNextLevel}
-        onReset={onResetProgress}
-      />
+    <motion.div 
+      {...pageMotionProps}
+      className="flex flex-col h-full" 
+      style={{ paddingBottom: '64px' }} // Account for external MainBottomNavigation
+    >
+      {/* Main Header is now external, rendered in App.tsx */}
       <ChapterBanner
         categoryColors={categoryDetails.colors}
         chapterTitle={dynamicBannerChapterTitle} 
         lessonTitle={dynamicBannerLessonTitle} 
         onTextClick={handleBannerTextClick}
-        onMenuIconClick={handleBannerMenuIconClick} // Changed prop name
+        onMenuIconClick={handleBannerMenuIconClick} 
         isLessonSelectionModeActive={isLessonSelectionModeActive}
-        isLessonInfoModeActive={isLessonInfoModeActive} // Pass new state
+        isLessonInfoModeActive={isLessonInfoModeActive}
+        style={{ top: `${MAIN_HEADER_HEIGHT}px` }} 
       />
       
       {learningData && (
@@ -454,7 +585,7 @@ const LearningPathPage: React.FC<LearningPathPageProps> = ({
             units={learningData.units}
             isActive={isLessonSelectionModeActive}
             onUnitSelect={handleSelectUnitFromList}
-            topOffset={HEADER_HEIGHT + CHAPTER_BANNER_SHRUNK_HEIGHT} // Always shrunk height when active
+            topOffset={MAIN_HEADER_HEIGHT + CHAPTER_BANNER_SHRUNK_HEIGHT} 
             categoryColors={categoryDetails.colors} 
         />
       )}
@@ -463,34 +594,32 @@ const LearningPathPage: React.FC<LearningPathPageProps> = ({
         <LessonInfoPanel
           unitInfoData={currentUnitInfoData}
           isActive={isLessonInfoModeActive}
-          topOffset={HEADER_HEIGHT + CHAPTER_BANNER_SHRUNK_HEIGHT} // Always shrunk height when active
-          // categoryColors={categoryDetails.colors} // Not strictly needed if bg is always white
+          topOffset={MAIN_HEADER_HEIGHT + CHAPTER_BANNER_SHRUNK_HEIGHT} 
         />
       )}
       
       <main 
         ref={mainScrollRef} 
-        className="flex-grow overflow-y-auto pb-20 bg-gray-50"
+        className="flex-grow overflow-y-auto bg-gray-50" 
         style={{ 
-          // paddingTop: `${currentStickyHeaderHeight}px`, // Padding is implicitly handled by scroll target logic now
           position: 'relative', 
           zIndex: 1, 
           isolation: 'isolate', 
-          display: isLessonInfoModeActive ? 'none' : 'block', // Hide main content if info panel is active
+          display: isLessonInfoModeActive ? 'none' : 'block', 
         }}
       > 
-        <div style={{height: `${fullStickyHeaderAndBannerHeight}px`}} /> {/* Spacer for initial view */}
+        <div style={{height: `${fullStickyHeaderAndBannerHeight}px`}} /> 
         <LearningPathContent
           units={learningData.units}
           categoryColors={categoryDetails.colors}
           onLessonClick={openLessonPopup}
           lessonRefs={lessonRefs}
           unitSectionRefs={unitSectionRefs}
-          scrollMarginTopValue={fullStickyHeaderAndBannerHeight} 
+          scrollMarginTopValue={fullStickyHeaderAndBannerHeight}
+          expandedUnits={expandedUnits}
+          onToggleUnitExpansion={toggleUnitExpansion}
         />
       </main>
-
-      <BottomNavigation activeTab="home" onNavigate={onNavigate} />
 
       {isLessonPopupMounted && lessonForPopup && lessonPopupRefState?.current && (
         <LessonPopup
@@ -503,7 +632,7 @@ const LearningPathPage: React.FC<LearningPathPageProps> = ({
           isVisible={isLessonPopupVisible}
         />
       )}
-    </div>
+    </motion.div>
   );
 };
 

@@ -1,11 +1,11 @@
 
 import React from 'react';
-import { SettingsIcon } from '../icons/ProfileIcons'; // ArrowLeftIcon removed
+import { SettingsIcon } from '../icons/ProfileIcons'; 
 
 interface ProfileHeaderProps {
-  onLogoClick: () => void; // Changed from onBack
+  onLogoClick: () => void; 
   onSettings: () => void;
-  logoColor: string; // Added for dynamic logo color
+  logoColor: string; 
 }
 
 const ProfileHeader: React.FC<ProfileHeaderProps> = ({ onLogoClick, onSettings, logoColor }) => {
@@ -14,12 +14,12 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ onLogoClick, onSettings, 
       <button
         onClick={onLogoClick}
         className={`p-2 ${logoColor} rounded-full hover:opacity-80 transition-opacity`}
-        aria-label="Quay lại trang học tập" // Updated aria-label
+        aria-label="Quay lại trang học tập" 
       >
         <h1 className="text-2xl font-bold">GiaoLy</h1>
       </button>
       
-      <h2 className="text-xl font-bold text-gray-800 absolute left-1/2 -translate-x-1/2"> {/* Centered title */}
+      <h2 className="text-xl font-bold text-gray-800 absolute left-1/2 -translate-x-1/2"> 
         Hồ Sơ
       </h2>
       

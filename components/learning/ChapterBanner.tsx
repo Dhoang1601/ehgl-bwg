@@ -8,9 +8,10 @@ interface ChapterBannerProps {
   chapterTitle: string;
   lessonTitle: string;
   onTextClick: () => void;
-  onMenuIconClick: () => void; // Renamed from onMenuClick
+  onMenuIconClick: () => void; 
   isLessonSelectionModeActive: boolean; 
-  isLessonInfoModeActive: boolean; // New prop
+  isLessonInfoModeActive: boolean; 
+  style?: React.CSSProperties; // Added style prop
 }
 
 const ChapterBanner: React.FC<ChapterBannerProps> = ({ 
@@ -18,14 +19,18 @@ const ChapterBanner: React.FC<ChapterBannerProps> = ({
     chapterTitle, 
     lessonTitle,
     onTextClick,
-    onMenuIconClick, // Use renamed prop
+    onMenuIconClick, 
     isLessonSelectionModeActive,
-    isLessonInfoModeActive // Use new prop
+    isLessonInfoModeActive,
+    style // Destructure style prop
 }) => {
   const isAnyPanelActive = isLessonSelectionModeActive || isLessonInfoModeActive;
 
   return (
-    <div className="fixed top-[52px] left-0 right-0 z-30 pointer-events-none"> 
+    <div 
+        className="fixed left-0 right-0 z-30 pointer-events-none"
+        style={style} // Apply dynamic style here
+    > 
       <div 
         className={`
           mx-5 
@@ -60,8 +65,8 @@ const ChapterBanner: React.FC<ChapterBannerProps> = ({
             font-bold text-white leading-snug
             transition-all duration-300 ease-in-out
             ${isAnyPanelActive 
-              ? 'text-sm truncate' // Use truncate (includes nowrap, overflow-hidden, text-ellipsis) and smaller font
-              : 'text-base mt-0.5 break-words' // Original style for non-active state
+              ? 'text-sm truncate' 
+              : 'text-base mt-0.5 break-words' 
             } 
             `}
           > 
@@ -72,12 +77,12 @@ const ChapterBanner: React.FC<ChapterBannerProps> = ({
         <div className="w-px h-6 bg-white/40 self-center mx-2" aria-hidden="true"></div>
 
         <button 
-          onClick={onMenuIconClick} // Use renamed prop
+          onClick={onMenuIconClick} 
           className="p-1 text-white hover:bg-white/10 rounded-full transition-colors flex-shrink-0"
           aria-label={isLessonInfoModeActive ? "Đóng chi tiết bài học" : (isLessonSelectionModeActive ? "Đóng danh sách bài học" : "Mở danh sách bài học")}
           aria-expanded={isLessonSelectionModeActive || isLessonInfoModeActive}
         >
-          {isLessonInfoModeActive || isLessonSelectionModeActive ? ( // Show ChevronUp if any panel is active
+          {isLessonInfoModeActive || isLessonSelectionModeActive ? ( 
             <ChevronUpIcon className="w-6 h-6" /> 
           ) : (
             <MenuIcon className="w-6 h-6" /> 

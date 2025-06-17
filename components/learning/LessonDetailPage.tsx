@@ -1,17 +1,14 @@
 
-
-console.log("START PARSING: components/learning/LessonDetailPage.tsx"); // Diagnostic log
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { CategoryDetails } from '../../types';
 import { ArrowLeftIcon } from '../icons/ProfileIcons';
 import HeartIcon from '../icons/HeartIcon';
 import ResultPopup from './ResultPopup';
-// GameOverPopup import removed
 import LessonCompleteScreen from './LessonCompleteScreen';
 import LoadingOverlay from '../LoadingOverlay';
 import { loadSound, playSound } from '../../src/utils/audioUtils'; 
-import QuitConfirmationPopup from './QuitConfirmationPopup'; // Import the new popup
+import QuitConfirmationPopup from './QuitConfirmationPopup';
+import { useLessonData, interactiveQuestionTypes } from '../../hooks/useLessonData'; // Import hook and types
 
 // Question Type Components
 import ReadingType from './questiontypes/ReadingType';
@@ -20,7 +17,7 @@ import SortType from './questiontypes/SortType';
 import MultipleChoiceType from './questiontypes/MultipleChoiceType';
 import TrueFalseType from './questiontypes/TrueFalseType';
 
-// --- START: Lesson Page Data Structure Definitions ---
+// --- START: Lesson Page Data Structure Definitions (kept for type usage within this file) ---
 export interface TextPageData { type: 'text'; content: string; }
 export interface ImagePageData { type: 'image'; imageUrl: string; altText?: string; }
 export interface HeadingPageData { type: 'heading'; content: string; }
@@ -47,7 +44,7 @@ export interface SortPageData {
   type: 'sort';
   prompt?: string;
   words: SortWordItem[];
-  correctOrderIds: string[] | string[][]; // Updated to allow array of arrays
+  correctOrderIds: string[] | string[][]; 
   hint?: string;
 }
 
@@ -79,206 +76,39 @@ export interface LessonContentData {
 }
 // --- END: Lesson Page Data Structure Definitions ---
 
-// --- START: Static Lesson Imports ---
-import xt_bm_1 from '../../data/lessons/xung-toi/baimodau_1.ts';
-import xt_bm_2 from '../../data/lessons/xung-toi/baimodau_2.ts';
-import xt_bm_3 from '../../data/lessons/xung-toi/baimodau_3.ts';
-import xt_bm_4 from '../../data/lessons/xung-toi/baimodau_4.ts';
-import xt_bm_5 from '../../data/lessons/xung-toi/baimodau_5.ts';
-import xt_b1_1 from '../../data/lessons/xung-toi/bai1_1.ts';
-import xt_b1_2 from '../../data/lessons/xung-toi/bai1_2.ts';
-import xt_b1_3 from '../../data/lessons/xung-toi/bai1_3.ts';
-import xt_b1_4 from '../../data/lessons/xung-toi/bai1_4.ts';
-import xt_b1_5 from '../../data/lessons/xung-toi/bai1_5.ts';
-import xt_b2_1 from '../../data/lessons/xung-toi/bai2_1.ts'; 
-import xt_b2_2 from '../../data/lessons/xung-toi/bai2_2.ts'; 
-import xt_b2_3 from '../../data/lessons/xung-toi/bai2_3.ts'; 
-import xt_b2_4 from '../../data/lessons/xung-toi/bai2_4.ts'; 
-import xt_b2_5 from '../../data/lessons/xung-toi/bai2_5.ts'; 
-
-// Imports for Xưng Tội 2 (Bài 14)
-import xt2_b14_1 from '../../data/lessons/xung-toi/bai14_1.ts';
-import xt2_b14_2 from '../../data/lessons/xung-toi/bai14_2.ts';
-import xt2_b14_3 from '../../data/lessons/xung-toi/bai14_3.ts';
-import xt2_b14_4 from '../../data/lessons/xung-toi/bai14_4.ts';
-import xt2_b14_5 from '../../data/lessons/xung-toi/bai14_5.ts';
-
-// Imports for Xưng Tội 2 (Bài 15)
-import xt2_b15_1 from '../../data/lessons/xung-toi/bai15_1.ts';
-import xt2_b15_2 from '../../data/lessons/xung-toi/bai15_2.ts';
-import xt2_b15_3 from '../../data/lessons/xung-toi/bai15_3.ts';
-import xt2_b15_4 from '../../data/lessons/xung-toi/bai15_4.ts';
-import xt2_b15_5 from '../../data/lessons/xung-toi/bai15_5.ts';
-// TODO: Add imports for Xưng Tội 2, Bài 16 when available
-
-import ts_bm_1 from '../../data/lessons/them-suc/baimodau_1.ts';
-import sd_bm_1 from '../../data/lessons/song-dao/baimodau_1.ts';
-
-const lessonModules: Record<string, LessonContentData> = {
-  'xung-toi/baimodau_1': xt_bm_1,
-  'xung-toi/baimodau_2': xt_bm_2,
-  'xung-toi/baimodau_3': xt_bm_3,
-  'xung-toi/baimodau_4': xt_bm_4,
-  'xung-toi/baimodau_5': xt_bm_5,
-  'xung-toi/bai1_1': xt_b1_1,
-  'xung-toi/bai1_2': xt_b1_2,
-  'xung-toi/bai1_3': xt_b1_3,
-  'xung-toi/bai1_4': xt_b1_4,
-  'xung-toi/bai1_5': xt_b1_5,
-  'xung-toi/bai2_1': xt_b2_1, 
-  'xung-toi/bai2_2': xt_b2_2, 
-  'xung-toi/bai2_3': xt_b2_3, 
-  'xung-toi/bai2_4': xt_b2_4, 
-  'xung-toi/bai2_5': xt_b2_5, 
-
-  // Mappings for Xưng Tội 2 (Bài 14)
-  'xung-toi/bai14_1': xt2_b14_1,
-  'xung-toi/bai14_2': xt2_b14_2,
-  'xung-toi/bai14_3': xt2_b14_3,
-  'xung-toi/bai14_4': xt2_b14_4,
-  'xung-toi/bai14_5': xt2_b14_5,
-
-  // Mappings for Xưng Tội 2 (Bài 15)
-  'xung-toi/bai15_1': xt2_b15_1,
-  'xung-toi/bai15_2': xt2_b15_2,
-  'xung-toi/bai15_3': xt2_b15_3,
-  'xung-toi/bai15_4': xt2_b15_4,
-  'xung-toi/bai15_5': xt2_b15_5,
-  // TODO: Add mappings for Xưng Tội 2, Bài 16 when available
-
-  'them-suc/baimodau_1': ts_bm_1,
-  'song-dao/baimodau_1': sd_bm_1,
-  // TODO: Add other lesson imports/mappings here as they are created
-};
-// --- END: Static Lesson Imports ---
-
-const interactiveQuestionTypes: LessonPage['type'][] = ['fill-blank', 'sort', 'multiple-choice', 'true-false'];
-
 type LessonOutcome = 'completed' | 'failed' | 'inprogress';
 
 interface LessonDetailPageProps {
   lessonId: string;
-  lessonTitle: string;
+  lessonTitle: string; // Used for the header, distinct from lessonData.title for content
   initialLives: number;
   initialQuestionIndex: number;
-  selectedCategory: string;
+  selectedCategory: string; 
   categoryDetails: CategoryDetails;
   onBackToMain: () => void; 
   onCompleteLesson: (lessonId: string, xpGained: number, nextLessonId?: string) => void;
   updateLessonProgressInApp: (lives: number, currentQuestionIndex: number) => void;
   isExiting?: boolean;
+  areSoundEffectsEnabled: boolean; // Added prop
 }
-
-const getLessonFileDetails = (lessonId: string, categoryKey: string): { categorySlugForPath: string, fileName: string } | null => {
-  const parts = lessonId.split('-'); // e.g., "xungtoi-unit1-l1" OR "xungtoi2-unit14-l1"
-  if (parts.length < 3) {
-    console.error(`Invalid lessonId format: ${lessonId}`);
-    return null;
-  }
-
-  let categorySlugForPath: string;
-  switch (categoryKey.toLowerCase()) {
-    case 'xungtoi': categorySlugForPath = 'xung-toi'; break;
-    case 'themsuc': categorySlugForPath = 'them-suc'; break;
-    case 'songdao': categorySlugForPath = 'song-dao'; break;
-    default:
-      console.error(`Unknown categoryKey for path generation: ${categoryKey}`);
-      return null;
-  }
-
-  const unitIdentifierPart = parts[1]; // e.g., "unit1" (from xungtoi-unit1), "unit14" (from xungtoi2-unit14)
-  const lessonNumberInUnitMatch = parts[parts.length -1].match(/^l(\d+)$/); // Use parts.length -1 for lesson number part
-  
-  if (!lessonNumberInUnitMatch || !lessonNumberInUnitMatch[1]) {
-    console.error(`Invalid lesson number format in lessonId: ${parts[parts.length -1]}`);
-    return null;
-  }
-  const lessonNum = lessonNumberInUnitMatch[1];
-
-  let filePrefix = '';
-
-  // Handle "Xưng Tội 1" (lessons like "xungtoi-unitX-lY")
-  if (lessonId.startsWith('xungtoi-') && !lessonId.startsWith('xungtoi2-')) { 
-    if (unitIdentifierPart === 'unit1') { 
-      filePrefix = `baimodau`;
-    } else if (unitIdentifierPart === 'unit2') { 
-      filePrefix = `bai1`;
-    } else if (unitIdentifierPart === 'unit3') { 
-      filePrefix = `bai2`;
-    } // Add more "Xưng Tội 1" unit to filePrefix mappings if needed
-    else {
-      console.warn(`Xưng Tội 1: Unit identifier "${unitIdentifierPart}" needs specific file prefix handling. Lesson ID: ${lessonId}`);
-      // Fallback for Xưng Tội 1 if a new unit pattern is introduced without explicit handling
-      filePrefix = `xt1_u${unitIdentifierPart.replace('unit','')}_l`; // e.g. xt1_u4_l
-      return { categorySlugForPath, fileName: `${filePrefix}${lessonNum}` }; // Return directly for fallback
-    }
-  }
-  // Handle "Xưng Tội 2" (lessons like "xungtoi2-unitX-lY")
-  else if (lessonId.startsWith('xungtoi2-')) { 
-    const unitNumberMatch = unitIdentifierPart.match(/^unit(\d+)$/); // e.g. "unit14" -> "14"
-    if (unitNumberMatch && unitNumberMatch[1]) {
-      const numericUnitPart = unitNumberMatch[1]; 
-      filePrefix = `bai${numericUnitPart}`; // Forms "bai14", "bai15"
-    } else {
-      console.warn(`Xưng Tội 2: Unit identifier "${unitIdentifierPart}" format unexpected. Lesson ID: ${lessonId}`);
-      filePrefix = `xt2_u${unitIdentifierPart.replace('unit','')}_l`; // e.g. xt2_uSomeOtherFormat_l
-      return { categorySlugForPath, fileName: `${filePrefix}${lessonNum}` }; // Return directly for fallback
-    }
-  }
-  // Handle "Thêm Sức 1" (example, adjust if file names differ for its units)
-  else if (lessonId.startsWith('themsuc-') && !lessonId.startsWith('themsuc2-')) { // Assuming TS1 only for now
-     if (unitIdentifierPart === 'unit1') {
-        filePrefix = 'baimodau'; // Assuming themsuc-unit1-lX maps to baimodau_X.ts for Thêm Sức
-     } // Add more "Thêm Sức 1" unit to filePrefix mappings if needed (e.g. for unit2, unit3)
-     else {
-        console.warn(`Thêm Sức 1: Unit identifier "${unitIdentifierPart}" needs specific file prefix handling. Lesson ID: ${lessonId}`);
-        filePrefix = `ts1_u${unitIdentifierPart.replace('unit','')}_l`;
-        return { categorySlugForPath, fileName: `${filePrefix}${lessonNum}` };
-     }
-  }
-  // Handle "Sống Đạo 1" (example, adjust if file names differ for its units)
-  else if (lessonId.startsWith('songdao-') && !lessonId.startsWith('songdao2-')) { // Assuming SD1 only for now
-      if (unitIdentifierPart === 'unit1') {
-        filePrefix = 'baimodau'; // Assuming songdao-unit1-lX maps to baimodau_X.ts for Sống Đạo
-      } // Add more "Sống Đạo 1" unit to filePrefix mappings if needed
-      else {
-        console.warn(`Sống Đạo 1: Unit identifier "${unitIdentifierPart}" needs specific file prefix handling. Lesson ID: ${lessonId}`);
-        filePrefix = `sd1_u${unitIdentifierPart.replace('unit','')}_l`;
-        return { categorySlugForPath, fileName: `${filePrefix}${lessonNum}` };
-      }
-  }
-  // Generic fallback if no specific category/class prefix matched above
-  else {
-    console.warn(`General: Unit identifier "${unitIdentifierPart}" from lessonId "${lessonId}" might not have explicit file prefix handling.`);
-    // A more generic fallback if category/class structure isn't explicitly handled above
-    // It might use the first part of lessonId (e.g., "xungtoi", "themsuc", "xungtoi2")
-    const categoryClassPrefix = parts[0]; // e.g. "xungtoi", "xungtoi2", "themsuc"
-    filePrefix = `${categoryClassPrefix}_u${unitIdentifierPart.replace('unit','')}_l`; // e.g. xungtoi2_u14_l
-    return { categorySlugForPath, fileName: `${filePrefix}${lessonNum}` };
-  }
-
-  return { categorySlugForPath, fileName: `${filePrefix}_${lessonNum}` };
-};
-
 
 const DEFAULT_READING_TIME = 15;
 const POST_COMPLETION_LOADER_DURATION = 700; // ms
 
 const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
   lessonId,
-  lessonTitle,
+  lessonTitle, // Prop for header display
   initialLives,
   initialQuestionIndex,
-  selectedCategory,
+  selectedCategory, 
   categoryDetails,
   onBackToMain,
   onCompleteLesson,
   updateLessonProgressInApp,
   isExiting = false,
+  areSoundEffectsEnabled, // Destructure prop
 }) => {
-  const [lessonData, setLessonData] = useState<LessonContentData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { lessonData, isLoading, error, totalInteractiveQuestions } = useLessonData(lessonId);
   const [pageVisible, setPageVisible] = useState(false);
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(initialQuestionIndex);
@@ -292,7 +122,6 @@ const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
   const [showPostCompletionLoader, setShowPostCompletionLoader] = useState(false);
   
   const [correctAnswersCount, setCorrectAnswersCount] = useState(0);
-  const [totalInteractiveQuestions, setTotalInteractiveQuestions] = useState(0);
 
   const [isAnswerChecked, setIsAnswerChecked] = useState(false);
   const [isCurrentAnswerCorrect, setIsCurrentAnswerCorrect] = useState<boolean | null>(null);
@@ -336,52 +165,28 @@ const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
   }, [lives, currentQuestionIndex, updateLessonProgressInApp, showLessonCompleteScreen]);
 
   useEffect(() => {
-    const fetchLessonContent = () => { 
-      setIsLoading(true); 
-      setError(null);
-      setLessonOutcome('inprogress'); 
-      
-      const fileDetails = getLessonFileDetails(lessonId, selectedCategory);
-      if (!fileDetails) {
-        setError(`Lỗi phân tích ID bài học: ${lessonId}. Không thể xác định tệp bài học.`); 
-        setIsLoading(false); 
-        return;
-      }
-      
-      try {
-        const moduleKey = `${fileDetails.categorySlugForPath}/${fileDetails.fileName}`;
-        console.log(`Attempting to load module with key: ${moduleKey}`); // Debug log
-        const data = lessonModules[moduleKey];
-        
-        if (!data) {
-          console.error(`Lesson content not found for key: ${moduleKey}. File details:`, fileDetails, "Lesson ID:", lessonId, "Selected Category:", selectedCategory);
-          throw new Error(`Nội dung bài học không được tìm thấy cho khóa: ${moduleKey}. (ID Bài học: ${lessonId})`);
-        }
-        
-        setLessonData(data);
-        const interactiveCount = data.pages.filter(p => interactiveQuestionTypes.includes(p.type)).length;
-        setTotalInteractiveQuestions(interactiveCount);
-        setCorrectAnswersCount(0); 
+    // Reset core lesson state when lessonId changes or data loads/reloads
+    setLessonOutcome('inprogress');
+    setShowLessonCompleteScreen(false);
+    setCorrectAnswersCount(0);
+    setCurrentQuestionIndex(initialQuestionIndex); // Reset to initial index for the new/reloaded lesson
+    setLives(initialLives); // Reset lives for the new/reloaded lesson
+    setUserAnswers({}); // Clear previous answers
+    resetQuestionState(true); // Reset detailed question state
 
-        if (initialLives <= 0 && initialQuestionIndex < data.pages.length) {
-          setLessonOutcome('failed');
-          setShowLessonCompleteScreen(true);
-        } else if (initialQuestionIndex >= data.pages.length) {
-          setLessonOutcome('completed');
-          setShowLessonCompleteScreen(true);
-        } else {
-          setLessonOutcome('inprogress');
-        }
-
-      } catch (err) {
-        console.error("Không tải được nội dung bài học:", err);
-        setError(`Nội dung bài học không tìm thấy. Chi tiết: ${(err as Error).message}`);
-      } finally {
-        setIsLoading(false);
+    if (!isLoading && lessonData) {
+      if (initialLives <= 0 && initialQuestionIndex < lessonData.pages.length) {
+        setLessonOutcome('failed');
+        setShowLessonCompleteScreen(true);
+      } else if (initialQuestionIndex >= lessonData.pages.length && initialQuestionIndex > 0 && lessonData.pages.length > 0) {
+        setLessonOutcome('completed');
+        setShowLessonCompleteScreen(true);
+      } else {
+        setLessonOutcome('inprogress');
       }
-    };
-    fetchLessonContent();
-  }, [lessonId, selectedCategory, initialLives, initialQuestionIndex]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lessonId, lessonData, isLoading, error, initialLives, initialQuestionIndex]);
 
 
   useEffect(() => {
@@ -409,7 +214,7 @@ const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
             setIsAnswerChecked(true); 
             setIsCurrentAnswerCorrect(true); 
             
-            playSound(correctSound);
+            if (areSoundEffectsEnabled) playSound(correctSound);
             setResultPopupState({
               isOpen: true,
               type: 'correct',
@@ -442,7 +247,7 @@ const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
     return () => {
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     };
-  }, [currentPageData, currentQuestionIndex, isAnswerChecked, resultPopupState?.isOpen, lessonData, correctSound, lessonOutcome]);
+  }, [currentPageData, currentQuestionIndex, isAnswerChecked, resultPopupState?.isOpen, lessonData, correctSound, lessonOutcome, areSoundEffectsEnabled]);
 
 
   const handleAnswerChange = (questionIdOrIndex: string | number, answer: any) => {
@@ -455,7 +260,9 @@ const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
     if (clearCurrentAnswer) {
       setUserAnswers(prev => {
         const newAnswers = {...prev};
-        delete newAnswers[currentQuestionIndex.toString()];
+        // The key is currentQuestionIndex, which changes for a new question.
+        // If we want to clear the specific answer for the *current* question index before advancing:
+        delete newAnswers[currentQuestionIndex.toString()]; 
         return newAnswers;
       });
     }
@@ -530,7 +337,7 @@ const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
       setIsAnswerChecked(true); 
 
       if (isCorrect) {
-        playSound(correctSound);
+        if (areSoundEffectsEnabled) playSound(correctSound);
         if (interactiveQuestionTypes.includes(currentPageData.type)) { 
             setCorrectAnswersCount(prev => prev + 1);
         }
@@ -553,7 +360,7 @@ const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
           }
         });
       } else {
-        playSound(incorrectSound);
+        if (areSoundEffectsEnabled) playSound(incorrectSound);
         const newLives = lives - 1;
         setLives(newLives);
         if (newLives <= 0) {
@@ -575,7 +382,7 @@ const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
         }
       }
     }
-  }, [lessonData, currentPageData, resultPopupState, lessonOutcome, isAnswerChecked, checkAnswer, currentQuestionIndex, lives, setLives, correctSound, incorrectSound, showQuitConfirmation]);
+  }, [lessonData, currentPageData, resultPopupState, lessonOutcome, isAnswerChecked, checkAnswer, currentQuestionIndex, lives, setLives, correctSound, incorrectSound, showQuitConfirmation, areSoundEffectsEnabled]);
   
   const handleContinueFromCompletionScreen = useCallback(() => {
     if (!lessonData) return;
@@ -586,6 +393,7 @@ const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
         onBackToMain(); 
       } else if (lessonOutcome === 'completed') {
         onCompleteLesson(lessonId, lessonData.xp, lessonData.nextLessonId);
+        onBackToMain(); 
       }
     }, POST_COMPLETION_LOADER_DURATION);
   }, [lessonData, lessonId, onCompleteLesson, onBackToMain, lessonOutcome]);
@@ -771,7 +579,7 @@ const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
           <ArrowLeftIcon className="w-6 h-6" />
         </button>
         <h2 className="text-lg font-semibold text-gray-800 text-center truncate px-2 flex-1">
-          {lessonTitle}
+          {lessonTitle} {/* Use prop lessonTitle for header */}
         </h2>
         <div className="flex items-center space-x-1.5 text-red-500">
           <HeartIcon className="w-5 h-5" />
@@ -835,5 +643,4 @@ const LessonDetailPage: React.FC<LessonDetailPageProps> = ({
     </div>
   );
 };
-console.log("END PARSING: components/learning/LessonDetailPage.tsx"); // Diagnostic log
 export default LessonDetailPage;

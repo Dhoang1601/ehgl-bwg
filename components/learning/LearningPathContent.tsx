@@ -12,7 +12,9 @@ interface LearningPathContentProps {
   onLessonClick: (lesson: Lesson, ref: React.RefObject<HTMLButtonElement>) => void;
   lessonRefs: React.MutableRefObject<LessonRefMap>;
   unitSectionRefs: React.MutableRefObject<React.RefObject<HTMLElement>[]>;
-  scrollMarginTopValue: number; // Added prop for scroll margin
+  scrollMarginTopValue: number;
+  expandedUnits: Record<string, boolean>;
+  onToggleUnitExpansion: (unitId: string) => void;
 }
 
 const LearningPathContent: React.FC<LearningPathContentProps> = ({ 
@@ -21,7 +23,9 @@ const LearningPathContent: React.FC<LearningPathContentProps> = ({
   onLessonClick, 
   lessonRefs,
   unitSectionRefs,
-  scrollMarginTopValue // Added to destructuring
+  scrollMarginTopValue,
+  expandedUnits,
+  onToggleUnitExpansion,
 }) => {
   
   units.forEach(unit => {
@@ -41,19 +45,25 @@ const LearningPathContent: React.FC<LearningPathContentProps> = ({
       <div className="absolute top-0 bottom-0 left-1/2 w-[3px] bg-gray-300 transform -translate-x-1/2 rounded-full" aria-hidden="true"></div>
       
       <div className="relative z-10">
-        {units.map((unit, unitIndex) => (
-          <UnitSection
-            key={unit.id}
-            ref={unitSectionRefs.current[unitIndex]}
-            unit={unit}
-            categoryColors={categoryColors}
-            onLessonClick={onLessonClick}
-            lessonRefs={lessonRefs}
-            isFirstUnit={unitIndex === 0}
-            isLastUnit={unitIndex === units.length - 1}
-            scrollMarginTopValue={scrollMarginTopValue} // Pass the prop down
-          />
-        ))}
+        {units.map((unit, unitIndex) => {
+          const isFullyCompleted = unit.lessons.every(lesson => lesson.status === 'completed');
+          return (
+            <UnitSection
+              key={unit.id}
+              ref={unitSectionRefs.current[unitIndex]}
+              unit={unit}
+              categoryColors={categoryColors}
+              onLessonClick={onLessonClick}
+              lessonRefs={lessonRefs}
+              isFirstUnit={unitIndex === 0}
+              isLastUnit={unitIndex === units.length - 1}
+              scrollMarginTopValue={scrollMarginTopValue}
+              isFullyCompleted={isFullyCompleted}
+              isExpanded={expandedUnits[unit.id] ?? true}
+              onToggleExpansion={() => onToggleUnitExpansion(unit.id)}
+            />
+          );
+        })}
       </div>
     </div>
   );

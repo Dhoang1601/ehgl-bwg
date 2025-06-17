@@ -42,7 +42,7 @@ const LessonInfoPanel: React.FC<LessonInfoPanelProps> = ({
           </h2>
           
           <div className="mb-6 text-center">
-            <p className="italic text-gray-700 text-base sm:text-lg mb-1">
+            <p className="italic text-gray-700 text-base sm:text-lg mb-1 whitespace-pre-line">
               {unitInfoData.wordOfGod}
             </p>
             <p className="text-sm text-gray-600">
@@ -56,7 +56,7 @@ const LessonInfoPanel: React.FC<LessonInfoPanelProps> = ({
                 <h3 className="font-semibold text-gray-800 text-sm sm:text-base mb-1">
                   Hỏi: {item.question}
                 </h3>
-                <p className="text-gray-700 text-sm sm:text-base ml-2 sm:ml-4">
+                <p className="text-gray-700 text-sm sm:text-base ml-2 sm:ml-4 whitespace-pre-line">
                   <span className="font-medium text-gray-500">Thưa:</span> {item.answer}
                 </p>
               </div>

@@ -1,6 +1,9 @@
 
 import React from 'react';
 import ChevronUpIcon from './ChevronUpIcon'; // Import the new icon
+import ChevronDownIcon from './ChevronDownIcon';
+import ChevronRightIcon from './ChevronRightIcon';
+
 
 interface IconProps {
   className?: string;
@@ -18,4 +21,4 @@ export const LogoutIcon: React.FC<IconProps> = ({ className }) => (
   </svg>
 );
 
-export { ChevronUpIcon }; // Export the new icon
+export { ChevronUpIcon, ChevronDownIcon, ChevronRightIcon }; // Export the new icons
